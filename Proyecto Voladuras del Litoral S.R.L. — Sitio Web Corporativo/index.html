@@ -2729,11 +2729,12 @@
     });
   })();
 
-  // ===== HERO: video de fondo (clip en cámara lenta y loop) =====
+  // ===== HERO: video de fondo (loop) =====
+  // hero-video.mp4 ya viene en cámara lenta (0,4×) y con zoom sobre la explosión
   (function heroVideo() {
-    const CLIP_START = 0;     // segundo inicial
-    const CLIP_END   = 3;     // segundo final
-    const SPEED      = 0.4;   // cámara lenta: 1 = normal, 0.5 = mitad, 0.25 = un cuarto
+    const CLIP_START = 0;         // segundo inicial
+    const CLIP_END   = Infinity;  // segundo final (Infinity = hasta el final del video)
+    const SPEED      = 1;         // velocidad extra: 1 = normal, 0.5 = mitad, 0.25 = un cuarto
 
     const hero  = document.getElementById('hero');
     const video = document.getElementById('hero-bg-video');
