@@ -1464,7 +1464,7 @@
   <canvas class="hero-video" id="hero-video" aria-hidden="true"></canvas>
   <!-- Video de fondo: primeros 3 s en cámara lenta, en loop (el canvas queda como respaldo) -->
   <video class="hero-bg-video" id="hero-bg-video" src="hero-video.mp4"
-         muted playsinline preload="auto" aria-hidden="true"></video>
+         muted loop playsinline preload="auto" aria-hidden="true"></video>
   <div class="hero-video-veil" aria-hidden="true"></div>
 
   <div class="hero-accent" aria-hidden="true"></div>
@@ -2741,6 +2741,7 @@
     if (!video || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     video.muted = true;
+    video.loop = true;   // al terminar vuelve a empezar solo
 
     function applyRate() {
       video.defaultPlaybackRate = SPEED;
@@ -2779,6 +2780,11 @@
     } else {
       video.addEventListener('timeupdate', checkLoop);
     }
+    // Respaldo: si algún navegador ignora loop, reiniciar al terminar
+    video.addEventListener('ended', () => {
+      video.currentTime = CLIP_START;
+      play();
+    });
 
     // Pausar cuando el hero no está visible o la pestaña está oculta
     let heroVisible = true;
