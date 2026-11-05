@@ -2844,8 +2844,45 @@
   fadeEls.forEach(el => observer.observe(el));
 
   // ===== FORM: feedback básico =====
-  const FORM_ENDPOINT = 'https://formsubmit.co/ajax/voladurasellitoral@gmail.com';
+  // Las consultas llegan a zviazoksolutions@gmail.com y desde ahí se reenvían a voladurasellitoral@gmail.com
+  const FORM_ENDPOINT = 'https://formsubmit.co/ajax/zviazoksolutions@gmail.com';
   const FORM_MAILTO   = 'voladurasellitoral@gmail.com';
+  // Respaldo si FormSubmit falla. Clave de https://web3forms.com (no es secreta)
+  const WEB3FORMS_KEY = '143cf6a8-2bfc-4209-8944-e39344ec612a';
+
+  async function sendFormSubmit(data) {
+    const res = await fetch(FORM_ENDPOINT, {
+      signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined,   // no esperar de más si está caído
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        ...data,
+        _subject: 'Consulta web — ' + (data.empresa || data.nombre),
+        _replyto: data.email,
+        _template: 'table',
+        _captcha: 'false',
+      }),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || out.success === false || out.success === 'false') throw new Error(out.message || res.status);
+  }
+
+  async function sendWeb3Forms(data) {
+    if (!WEB3FORMS_KEY) throw new Error('Web3Forms sin clave');
+    const res = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        access_key: WEB3FORMS_KEY,
+        subject: 'Consulta web — ' + (data.empresa || data.nombre),
+        from_name: 'Sitio web Voladuras del Litoral',
+        replyto: data.email,
+        ...data,
+      }),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || !out.success) throw new Error(out.message || res.status);
+  }
 
   async function handleFormSubmit() {
     const $ = id => document.getElementById(id);
@@ -2875,19 +2912,11 @@
     btn.disabled = true;
     setStatus('Enviando consulta…', '');
     try {
-      const res = await fetch(FORM_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          ...data,
-          _subject: 'Consulta web — ' + (data.empresa || data.nombre),
-          _replyto: data.email,
-          _template: 'table',
-          _captcha: 'false',
-        }),
-      });
-      const out = await res.json().catch(() => ({}));
-      if (!res.ok || out.success === false || out.success === 'false') throw new Error(out.message || res.status);
+      try {
+        await sendFormSubmit(data);
+      } catch (e1) {
+        await sendWeb3Forms(data);   // si también falla, cae al respaldo por correo
+      }
       setStatus('Gracias, ' + data.nombre + '. Recibimos su consulta y le responderemos a la brevedad.', 'ok');
       ['cf-name','cf-company','cf-email','cf-phone','cf-message'].forEach(id => $(id).value = '');
       $('cf-sector').selectedIndex = 0;
